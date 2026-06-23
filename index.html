@@ -177,7 +177,6 @@
   }
   .la.glass .la-app-name,
   .la.glass .la-progress { color: rgba(255,255,255,.72); }
-  .la.glass .la-workout-name,
   .la.glass .la-exercise-name { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.28); }
   .la.glass .la-divider { background: rgba(255,255,255,.18); }
   .la.glass .la-label.next { color: rgba(255,255,255,.5); }
@@ -197,7 +196,7 @@
   .la.glass .idle-sub { color: rgba(255,255,255,.78); }
   .la-header {
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 11px;
+    margin-bottom: 4px;
   }
   .la-logo-row { display: flex; align-items: center; gap: 7px; }
   .la-logo {
@@ -206,8 +205,13 @@
   .la-logo img { width: 100%; height: 100%; display: block; object-fit: cover; }
   .la-app-name { font-size: 11px; color: var(--grey); letter-spacing: .3px; }
   .la-progress { font-size: 11px; color: var(--grey); font-variant-numeric: tabular-nums; }
-  .la-workout-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .la-workout-name { font-size: 13px; font-weight: 500; color: var(--offwhite); letter-spacing: .2px; }
+  .la-meta-line { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .la-workout-name { font-size: 11px; font-weight: 500; color: #a9a9ad; letter-spacing: .2px; }
+  .la-meta-sep { font-size: 11px; color: #5a5a5e; }
+  .la-progress-line { font-size: 11px; font-weight: 400; color: var(--grey); }
+  .la.glass .la-workout-name { color: rgba(255,255,255,.74); text-shadow: 0 1px 3px rgba(0,0,0,.28); }
+  .la.glass .la-meta-sep { color: rgba(255,255,255,.4); }
+  .la.glass .la-progress-line { color: rgba(255,255,255,.66); }
   .round-pill {
     font-size: 9px; font-weight: 700; letter-spacing: .5px; flex-shrink: 0;
     color: var(--sage); background: rgba(184,186,158,.14);
@@ -224,7 +228,7 @@
   }
   .la-label.now { color: var(--sage); }
   .la-label.next { color: var(--dim); }
-  .la-exercise-name { font-size: 13px; font-weight: 500; color: var(--offwhite); flex: 1; }
+  .la-exercise-name { font-size: 16px; font-weight: 600; color: var(--offwhite); flex: 1; letter-spacing: -.1px; }
   .la-exercise-name.next-name { color: var(--dim2); font-weight: 400; font-size: 12px; }
   .la-timer {
     font-size: 21px; font-weight: 300; color: var(--sage);
@@ -579,7 +583,7 @@ function paintTimers() {
 function render() {
   const card = $("laCard");
   const ex = cur(), nx = next();
-  const progress = `${Math.min(state.index + 1, total)} / ${total}`;
+  const progress = `${Math.min(state.index + 1, total)} of ${total} exercises`;
 
   // ---- Live Activity banner ----
   if (state.phase === "idle") {
@@ -590,7 +594,7 @@ function render() {
         <div class="idle-sub">Press “Start workout” below to begin</div>
       </div>`;
   } else if (state.phase === "complete") {
-    card.innerHTML = headerHTML(`${total} / ${total}`, false) + `
+    card.innerHTML = headerHTML(`${total} of ${total} exercises`, false) + `
       <div class="la-divider"></div>
       <div class="complete-wrap">
         <div class="complete-check">${ICON.check}</div>
@@ -629,6 +633,7 @@ function render() {
       : repBased
         ? `<span class="la-reps" id="laReps">${ex.reps}</span>`
         : `<span class="la-timer" id="laTimer">${fmt(remainingMs())}</span>`;
+    // Rep-based exercises use "Done" (mark complete); timed use Pause/Resume
     const actions = repBased
       ? `<div class="la-btn" id="btnDone">${ICON.check} Done</div>
          <div class="la-btn" id="btnSkip">${ICON.skip} Skip</div>`
@@ -644,7 +649,7 @@ function render() {
       ${nextRow}
       <div class="la-divider"></div>
       <div class="la-actions">${actions}</div>`;
-    if (repBased) $("btnDone").onclick = enterRest;   // mark set complete -> rest -> next
+    if (repBased) $("btnDone").onclick = enterRest;   // mark complete -> rest -> next
     else $("btnPause").onclick = togglePause;
     $("btnSkip").onclick = skip;
   }
@@ -661,11 +666,12 @@ function headerHTML(progress, isIdle) {
         <div class="la-logo"><img src="mwu-logo.png" alt="MWU"></div>
         <span class="la-app-name">Move With Us</span>
       </div>
-      <span class="la-progress">${progress}</span>
-    </div>
-    <div class="la-workout-row">
-      <span class="la-workout-name">${WORKOUT.name}</span>
       ${rounds > 1 ? `<span class="round-pill">Round ${state.round} / ${rounds}</span>` : ""}
+    </div>
+    <div class="la-meta-line">
+      <span class="la-workout-name">${WORKOUT.name}</span>
+      <span class="la-meta-sep">·</span>
+      <span class="la-progress-line">${progress}</span>
     </div>`;
 }
 
