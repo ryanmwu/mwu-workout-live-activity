@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MWU Workout Live Activity — Interactive Prototype</title>
+<style>
+  :root {
+    --bg: #1A1A1A;
+    --card: #2A2A2A;
+    --card-2: #1E1E1E;
+    --sage: #B8BA9E;
+    --sage-dim: #6B6E5A;
+    --offwhite: #F7F3ED;
+    --grey: #888;
+    --dim: #555;
+    --dim2: #666;
+    --border: #3A3A3A;
+    --btn: #333;
+    --btn-border: #444;
+    --rest-badge-bg: #3A3830;
+    --sf: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--sf);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #2c2c2e 0%, transparent 60%),
+      #0e0e0f;
+    color: #e7e7ea;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 36px 20px 80px;
+  }
+  .page-head { text-align: center; margin-bottom: 8px; }
+  .page-head h1 {
+    font-size: 20px; font-weight: 600; letter-spacing: -0.2px;
+    margin: 0 0 4px; color: #f3f3f5;
+  }
+  .page-head p {
+    font-size: 13px; color: #9a9aa0; margin: 0;
+  }
+
+  .stage {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 28px;
+  }
+
+  /* ---------------- Phone frame ---------------- */
+  .phone {
+    width: 300px;
+    background: var(--bg);
+    border-radius: 48px;
+    border: 2px solid #333;
+    box-shadow:
+      0 0 0 1px #555 inset,
+      0 30px 70px rgba(0,0,0,.55);
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .screen {
+    min-height: 600px;
+    padding: 0 0 30px;
+    position: relative;
+    background-size: cover;
+    background-position: center;
+  }
+  /* Lock-screen wallpapers (CSS-painted, photographic-feel) */
+  .screen.wp-field {
+    background:
+      radial-gradient(120px 90px at 22% 12%, rgba(255,250,230,.55), transparent 60%),
+      linear-gradient(to bottom, #7fb2e6 0%, #9fc6e0 28%, #aacf86 54%, #6f9e44 74%, #3f6b28 100%);
+  }
+  .screen.wp-sunset {
+    background:
+      radial-gradient(150px 110px at 70% 18%, rgba(255,220,150,.6), transparent 65%),
+      linear-gradient(to bottom, #271a47 0%, #6b3568 32%, #c85f4d 60%, #f0a85f 82%, #5a3a32 100%);
+  }
+  .screen.wp-night {
+    background:
+      radial-gradient(100px 80px at 30% 14%, rgba(180,200,255,.18), transparent 60%),
+      linear-gradient(to bottom, #070a18 0%, #0f1530 50%, #1a2244 100%);
+  }
+  .screen.wp-bright {
+    background:
+      radial-gradient(160px 120px at 28% 14%, rgba(255,255,255,.85), transparent 65%),
+      linear-gradient(to bottom, #eef4fc 0%, #d7e6f5 48%, #eaf0f7 78%, #dfe7ef 100%);
+  }
+
+  /* Dynamic Island (compact) sits at top */
+  .island-zone {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 14px;
+    position: relative;
+    z-index: 20;
+  }
+  .notch {
+    width: 96px; height: 28px; background: #000;
+    border-radius: 0 0 18px 18px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  }
+  .di-compact {
+    background: #000;
+    border-radius: 20px;
+    height: 36px;
+    min-width: 124px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px; gap: 14px;
+    border: 0.5px solid #1c1c1c;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+    user-select: none;
+  }
+  .di-compact:active { transform: scale(.97); }
+  .di-compact.pulse { box-shadow: 0 0 0 3px rgba(184,186,158,.18); }
+  .di-leading { display: flex; align-items: center; gap: 6px; }
+  .di-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--sage); flex-shrink: 0; }
+  .di-dot.resting { background: var(--sage-dim); }
+  .di-dot.paused { background: var(--grey); }
+  .di-text { font-size: 11px; font-weight: 600; color: var(--offwhite); letter-spacing: .3px; }
+  .di-text.muted { color: var(--grey); }
+  .di-timer-compact { font-size: 12px; font-weight: 400; color: var(--sage); font-variant-numeric: tabular-nums; }
+  .hint-longpress {
+    position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; color: #4a4a4c; letter-spacing: .4px; white-space: nowrap;
+  }
+
+  /* Lock clock */
+  .lock-time { text-align: center; padding: 8px 0 6px; }
+  .lock-time .time {
+    font-size: 56px; font-weight: 300; color: rgba(255,255,255,.95);
+    letter-spacing: -2px; line-height: 1; font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 10px rgba(0,0,0,.28);
+  }
+  .lock-time .date {
+    font-size: 13px; font-weight: 600; color: rgba(255,255,255,.9); margin-top: 6px;
+    text-shadow: 0 1px 4px rgba(0,0,0,.3);
+  }
+  /* On a light wallpaper the system flips the clock dark */
+  .screen.wp-bright .lock-time .time,
+  .screen.wp-bright .lock-time .date {
+    color: rgba(40,45,55,.92); text-shadow: 0 1px 4px rgba(255,255,255,.4);
+  }
+
+  /* ---------------- Live Activity banner ---------------- */
+  .la {
+    margin: 16px 12px 0;
+    background: var(--card);
+    border-radius: 24px;
+    padding: 14px 16px 13px;
+    border: 0.5px solid var(--border);
+    box-shadow: 0 8px 22px rgba(0,0,0,.35);
+  }
+
+  /* Glass material variant — translucent, samples the wallpaper (lock-screen banner only) */
+  .la.glass {
+    background: rgba(28,28,30,0.34);
+    -webkit-backdrop-filter: blur(26px) saturate(155%);
+    backdrop-filter: blur(26px) saturate(155%);
+    border: 0.5px solid rgba(255,255,255,0.20);
+    box-shadow: 0 8px 26px rgba(0,0,0,.28);
+  }
+  .la.glass .la-app-name,
+  .la.glass .la-progress { color: rgba(255,255,255,.72); }
+  .la.glass .la-workout-name,
+  .la.glass .la-exercise-name { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.28); }
+  .la.glass .la-divider { background: rgba(255,255,255,.18); }
+  .la.glass .la-label.next { color: rgba(255,255,255,.5); }
+  .la.glass .la-exercise-name.next-name { color: rgba(255,255,255,.7); }
+  .la.glass .la-timer { text-shadow: 0 1px 4px rgba(0,0,0,.3); }
+  .la.glass .la-btn { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.16); color: #fff; }
+  .la.glass .la-btn:hover { background: rgba(255,255,255,0.24); }
+  .la.glass .la-btn svg path,
+  .la.glass .la-btn svg rect,
+  .la.glass .la-btn svg polygon { fill: rgba(255,255,255,.85); }
+  .la.glass .rest-upnext .lbl { color: rgba(255,255,255,.55); }
+  .la.glass .rest-upnext .val { color: rgba(255,255,255,.82); }
+  .la.glass .badge.paused { background: rgba(255,255,255,.22); color: #fff; }
+  .la.glass .complete-title,
+  .la.glass .idle-title { color: #fff; }
+  .la.glass .complete-sub,
+  .la.glass .idle-sub { color: rgba(255,255,255,.78); }
+  .la-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 11px;
+  }
+  .la-logo-row { display: flex; align-items: center; gap: 7px; }
+  .la-logo {
+    width: 19px; height: 19px; border-radius: 5px; overflow: hidden; flex-shrink: 0;
+  }
+  .la-logo img { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .la-app-name { font-size: 11px; color: var(--grey); letter-spacing: .3px; }
+  .la-progress { font-size: 11px; color: var(--grey); font-variant-numeric: tabular-nums; }
+  .la-workout-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .la-workout-name { font-size: 13px; font-weight: 500; color: var(--offwhite); letter-spacing: .2px; }
+  .round-pill {
+    font-size: 9px; font-weight: 700; letter-spacing: .5px; flex-shrink: 0;
+    color: var(--sage); background: rgba(184,186,158,.14);
+    padding: 2px 8px; border-radius: 6px; white-space: nowrap;
+  }
+  .la.glass .round-pill { color: #fff; background: rgba(255,255,255,.18); }
+  .la-divider { height: 0.5px; background: var(--border); margin: 11px 0; }
+
+  .la-exercise-row { display: flex; align-items: center; gap: 8px; }
+  .la-exercise-row + .la-exercise-row { margin-top: 9px; }
+  .la-label {
+    font-size: 9px; font-weight: 700; letter-spacing: .8px;
+    width: 30px; flex-shrink: 0;
+  }
+  .la-label.now { color: var(--sage); }
+  .la-label.next { color: var(--dim); }
+  .la-exercise-name { font-size: 13px; font-weight: 500; color: var(--offwhite); flex: 1; }
+  .la-exercise-name.next-name { color: var(--dim2); font-weight: 400; font-size: 12px; }
+  .la-timer {
+    font-size: 21px; font-weight: 300; color: var(--sage);
+    letter-spacing: -.5px; flex-shrink: 0; font-variant-numeric: tabular-nums;
+  }
+  .la-timer.paused { color: var(--grey); }
+  .la-reps {
+    font-size: 17px; font-weight: 400; color: var(--sage);
+    letter-spacing: .2px; flex-shrink: 0;
+  }
+
+  /* Paused / state badges */
+  .badge {
+    display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .8px;
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .badge.rest { background: var(--rest-badge-bg); color: var(--sage); }
+  .badge.paused { background: #333; color: var(--grey); }
+
+  /* Rest layout */
+  .rest-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .rest-timer-big {
+    font-size: 30px; font-weight: 300; color: var(--sage);
+    letter-spacing: -1px; margin-top: 7px; font-variant-numeric: tabular-nums;
+  }
+  .rest-upnext { text-align: right; }
+  .rest-upnext .lbl { font-size: 9px; color: var(--dim); letter-spacing: .6px; margin-bottom: 4px; }
+  .rest-upnext .val { font-size: 12px; color: var(--grey); }
+
+  /* Completion */
+  .complete-wrap { text-align: center; padding: 6px 0 2px; }
+  .complete-check {
+    width: 40px; height: 40px; border-radius: 50%; background: var(--sage);
+    display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;
+  }
+  .complete-title { font-size: 15px; font-weight: 600; color: var(--offwhite); }
+  .complete-sub { font-size: 11px; color: var(--grey); margin-top: 3px; }
+
+  /* Idle / ready */
+  .idle-wrap { text-align: center; padding: 4px 0; }
+  .idle-title { font-size: 13px; font-weight: 500; color: var(--offwhite); }
+  .idle-sub { font-size: 11px; color: var(--grey); margin-top: 4px; }
+
+  /* Actions */
+  .la-actions { display: flex; gap: 8px; margin-top: 13px; }
+  .la-btn {
+    flex: 1; height: 32px; border-radius: 9px;
+    border: 0.5px solid var(--btn-border); background: var(--btn);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 11px; font-weight: 500; color: #b9b9bc;
+    cursor: pointer; user-select: none;
+    transition: background .12s ease, transform .08s ease;
+  }
+  .la-btn:hover { background: #3b3b3b; }
+  .la-btn:active { transform: scale(.97); }
+  .la-btn svg { width: 13px; height: 13px; }
+  .la-btn svg path, .la-btn svg rect, .la-btn svg polygon { fill: var(--grey); }
+
+  .home-indicator { width: 108px; height: 5px; background: #444; border-radius: 3px; margin: 22px auto 0; }
+
+  /* ---------------- Dynamic Island expanded ---------------- */
+  .di-expanded {
+    width: 290px; background: var(--card-2); border-radius: 26px;
+    padding: 18px 18px 16px; border: 0.5px solid #333;
+    box-shadow: 0 20px 50px rgba(0,0,0,.5);
+    opacity: 0; transform: translateY(8px) scale(.98);
+    transition: opacity .18s ease, transform .18s ease;
+    pointer-events: none;
+  }
+  .di-expanded.open { opacity: 1; transform: none; pointer-events: auto; }
+  .di-exp-head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+  .di-exp-head .meta-main { font-size: 11px; color: var(--grey); }
+  .di-exp-head .meta-sub { font-size: 10px; color: var(--dim); margin-top: 1px; }
+  .di-exp-mid { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+  .di-exp-exercise { font-size: 15px; font-weight: 500; color: var(--offwhite); }
+  .di-exp-timer { font-size: 27px; font-weight: 300; color: var(--sage); letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+  .di-exp-next { font-size: 11px; color: var(--dim); margin-bottom: 13px; }
+  .di-exp-next span { color: #777; }
+  .di-progress { height: 4px; background: #2A2A2A; border-radius: 3px; margin-bottom: 15px; overflow: hidden; }
+  .di-progress-fill { height: 100%; background: var(--sage); border-radius: 3px; transition: width .4s ease; }
+  .di-exp-actions { display: flex; gap: 8px; }
+  .di-exp-btn {
+    flex: 1; height: 34px; background: var(--card); border-radius: 11px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 11px; color: #b9b9bc; cursor: pointer; user-select: none;
+    transition: background .12s ease, transform .08s ease;
+  }
+  .di-exp-btn:hover { background: #343434; }
+  .di-exp-btn:active { transform: scale(.97); }
+  .di-exp-btn svg { width: 13px; height: 13px; }
+  .di-exp-btn svg path, .di-exp-btn svg rect, .di-exp-btn svg polygon { fill: var(--grey); }
+
+  .col-right { display: flex; flex-direction: column; gap: 14px; align-items: center; width: 290px; }
+  .col-label { font-size: 11px; color: #8a8a90; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; }
+
+  /* ---------------- Control deck ---------------- */
+  .deck {
+    margin: 40px auto 0; max-width: 660px;
+    background: #161618; border: 1px solid #262629; border-radius: 16px;
+    padding: 18px 20px;
+  }
+  .deck-title { font-size: 11px; font-weight: 700; letter-spacing: .8px; color: #6f6f76; text-transform: uppercase; margin-bottom: 14px; }
+  .deck-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .ctrl {
+    border: 1px solid #303034; background: #1f1f22; color: #d6d6da;
+    border-radius: 10px; padding: 9px 14px; font-size: 12px; font-weight: 500;
+    cursor: pointer; font-family: var(--sf); display: inline-flex; align-items: center; gap: 7px;
+    transition: background .12s ease, border-color .12s ease;
+  }
+  .ctrl:hover { background: #27272b; }
+  .ctrl.primary { background: var(--sage); color: #1A1A1A; border-color: var(--sage); font-weight: 600; }
+  .ctrl.primary:hover { background: #c6c8ad; }
+  .ctrl.active { border-color: var(--sage); color: var(--sage); }
+  .ctrl svg { width: 13px; height: 13px; }
+  .ctrl svg path, .ctrl svg polygon, .ctrl svg rect { fill: currentColor; }
+  .deck-sep { width: 1px; height: 22px; background: #2a2a2e; margin: 0 4px; }
+  .deck-note { font-size: 11px; color: #6f6f76; margin-top: 12px; line-height: 1.5; }
+  .deck-note b { color: #9a9aa0; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-head">
+    <h1>MWU Workout — Live Activity</h1>
+    <p>Interactive prototype · timed &amp; rep-based exercises, rest periods and live controls</p>
+  </div>
+
+  <div class="stage">
+    <!-- Phone -->
+    <div class="phone">
+      <div class="screen wp-field">
+        <div class="island-zone">
+          <div class="notch" id="notch" style="display:none;"></div>
+          <div class="di-compact" id="diCompact" title="Long-press to expand">
+            <div class="di-leading">
+              <div class="di-dot" id="diDot"></div>
+              <span class="di-text" id="diText">MWU</span>
+            </div>
+            <span class="di-timer-compact" id="diTimerCompact">0:42</span>
+          </div>
+          <div class="hint-longpress" id="longpressHint">press &amp; hold to expand ↗</div>
+        </div>
+
+        <div class="lock-time">
+          <div class="time" id="lockTime">9:41</div>
+          <div class="date" id="lockDate">Monday, 22 June</div>
+        </div>
+
+        <!-- Live Activity banner — content swapped by JS -->
+        <div class="la" id="laCard"></div>
+
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+
+    <!-- Dynamic Island expanded (mirrors state) -->
+    <div class="col-right">
+      <div class="col-label">Dynamic Island — expanded</div>
+      <div class="di-expanded" id="diExpanded">
+        <div class="di-exp-head">
+          <div class="la-logo"><img src="mwu-logo.png" alt="MWU"></div>
+          <div>
+            <div class="meta-main" id="expMetaMain">Move With Us · Full Body Burn</div>
+            <div class="meta-sub" id="expMetaSub">5 of 12 exercises</div>
+          </div>
+        </div>
+        <div class="di-exp-mid">
+          <div class="di-exp-exercise" id="expExercise">Sumo Squat</div>
+          <div class="di-exp-timer" id="expTimer">0:42</div>
+        </div>
+        <div class="di-exp-next" id="expNext">Next up: <span>Romanian Deadlift</span></div>
+        <div class="di-progress"><div class="di-progress-fill" id="expProgress" style="width:42%"></div></div>
+        <div class="di-exp-actions" id="expActions"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Control deck -->
+  <div class="deck">
+    <div class="deck-title">Simulation controls</div>
+    <div class="deck-row">
+      <button class="ctrl primary" id="btnStart"></button>
+      <div class="deck-sep"></div>
+      <button class="ctrl" id="btnSpeed">Speed: 1×</button>
+      <button class="ctrl active" id="btnDevice">iPhone 15 Pro (Dynamic Island)</button>
+      <button class="ctrl" id="btnExpand">Toggle expanded island</button>
+      <div class="deck-sep"></div>
+      <button class="ctrl" id="btnCard">Card: Fixed</button>
+      <button class="ctrl" id="btnWallpaper">Wallpaper: Field</button>
+    </div>
+    <div class="deck-note">
+      <b>Pause / Resume</b> and <b>Skip</b> on the widget itself are live — try them mid-countdown.
+      <b>Timed</b> exercises auto-run their countdown; <b>rep-based</b> ones (e.g. Push-Up 3 × 12) show a
+      rep target instead and wait for you to tap <b>Done</b>. Each exercise drops into a <b>rest</b> period,
+      then advances. Switch the device toggle to preview phones <b>without</b> a Dynamic Island.
+      <b>Card</b> swaps the fixed dark surface for Apple's translucent glass material — cycle the
+      <b>Wallpaper</b> (try “Bright”) to see how each holds up.
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- SVG icons ----------
+const ICON = {
+  pause: '<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+  play:  '<svg viewBox="0 0 24 24"><polygon points="7,5 19,12 7,19"/></svg>',
+  skip:  '<svg viewBox="0 0 24 24"><polygon points="5,5 14,12 5,19"/><rect x="16" y="5" width="3" height="14" rx="1"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6 12-12-1.4-1.4z"/></svg>',
+};
+
+// ---------- Workout data ----------
+const WORKOUT = {
+  name: "Full Body Burn",
+  rounds: 2,  // whole list is repeated this many times (set to 1 for a single-round workout)
+  // Timed exercises have `dur` (seconds); rep-based have `reps` (rep count only — no sets shown).
+  exercises: [
+    { name: "Jumping Jacks",      dur: 30 },
+    { name: "Push-Up",            reps: "12 reps" },
+    { name: "Plank",              dur: 45 },
+    { name: "Lunge",              reps: "12 / side" },
+    { name: "Sumo Squat",         dur: 42 },
+    { name: "Romanian Deadlift",  reps: "10 reps" },
+    { name: "Mountain Climber",   dur: 30 },
+    { name: "Glute Bridge",       reps: "15 reps" },
+  ],
+};
+const REST_SEC = 15;
+const SEED_INDEX = 4; // start at Sumo Squat (5/8) to match the mockup's initial state
+
+// ---------- State ----------
+let state = {
+  phase: "idle",      // idle | active | rest | paused | complete
+  index: SEED_INDEX,
+  round: 1,           // current round (1-based)
+  endAt: 0,           // timestamp ms when current phase ends
+  remainOnPause: 0,   // ms frozen while paused
+  speed: 1,
+};
+
+// ---------- Helpers ----------
+const $ = (id) => document.getElementById(id);
+const total = WORKOUT.exercises.length;
+const rounds = WORKOUT.rounds || 1;
+const fmt = (ms) => {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+};
+const cur  = () => WORKOUT.exercises[state.index];
+// Next = next exercise, wrapping to the first exercise of the next round when one remains.
+function next() {
+  if (state.index < total - 1) return WORKOUT.exercises[state.index + 1];
+  if (state.round < rounds) return WORKOUT.exercises[0];
+  return null;
+}
+const isLastExercise = () => state.index >= total - 1 && state.round >= rounds;
+const isTimed = (ex) => !!ex && ex.dur != null;  // rep-based exercises have no timer (exerciseTimerEnd = nil)
+const remainingMs = () => {
+  if (state.phase === "paused") return state.remainOnPause;
+  return Math.max(0, state.endAt - Date.now());
+};
+function setEnd(seconds) { state.endAt = Date.now() + (seconds * 1000) / state.speed; }
+
+// ---------- Phase transitions ----------
+function startWorkout() {
+  state.index = 0;
+  state.round = 1;
+  enterActive();
+}
+function enterActive() {
+  state.phase = "active";
+  if (isTimed(cur())) setEnd(cur().dur);
+  else state.endAt = 0;          // rep-based: waits for the user to tap Done
+  render();
+}
+function enterRest() {
+  if (isLastExercise()) { complete(); return; }   // no rest after the final exercise of the final round
+  state.phase = "rest";
+  setEnd(REST_SEC);
+  render();
+}
+function advance() {
+  if (state.index < total - 1) { state.index++; enterActive(); return; }
+  if (state.round < rounds) { state.round++; state.index = 0; enterActive(); return; }  // start next round
+  complete();
+}
+function skip() {            // Skip current exercise -> straight to next exercise (next round if needed)
+  if (state.phase === "idle" || state.phase === "complete") return;
+  if (state.index < total - 1) { state.index++; enterActive(); return; }
+  if (state.round < rounds) { state.round++; state.index = 0; enterActive(); return; }
+  complete();
+}
+function skipRest() { advance(); }
+function togglePause() {
+  if (state.phase === "active") {
+    state.remainOnPause = remainingMs();
+    state.phase = "paused";
+  } else if (state.phase === "paused") {
+    state.phase = "active";
+    state.endAt = Date.now() + state.remainOnPause;
+  }
+  render();
+}
+function complete() {
+  state.phase = "complete";
+  render();
+  setTimeout(() => {
+    if (state.phase === "complete") { state.phase = "idle"; state.index = SEED_INDEX; state.round = 1; render(); }
+  }, 6000 / state.speed);
+}
+
+// ---------- Tick loop (Date-based, mirrors Text(style:.timer)) ----------
+function tick() {
+  // Only timed phases count down; rep-based exercises hold until the user taps Done.
+  if (state.phase === "active" && !isTimed(cur())) return;
+  if (state.phase === "active" || state.phase === "rest") {
+    if (remainingMs() <= 0) {
+      if (state.phase === "active") enterRest();
+      else advance();
+    } else {
+      paintTimers();
+    }
+  }
+}
+setInterval(tick, 150);
+
+// Keep the lock clock honest
+function paintClock() {
+  const d = new Date();
+  let h = d.getHours() % 12; if (h === 0) h = 12;
+  $("lockTime").textContent = h + ":" + String(d.getMinutes()).padStart(2, "0");
+  $("lockDate").textContent = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+}
+paintClock(); setInterval(paintClock, 10000);
+
+// ---------- Rendering ----------
+function paintTimers() {
+  const t = fmt(remainingMs());
+  if (state.phase === "active") {
+    const el = $("laTimer"); if (el) el.textContent = t;
+  } else if (state.phase === "rest") {
+    const el = $("restTimer"); if (el) el.textContent = t;
+  }
+  // Dynamic Island compact + expanded
+  if (state.phase === "active" || state.phase === "rest") {
+    $("diTimerCompact").textContent = t;
+    $("expTimer").textContent = t;
+  }
+}
+
+function render() {
+  const card = $("laCard");
+  const ex = cur(), nx = next();
+  const progress = `${Math.min(state.index + 1, total)} / ${total}`;
+
+  // ---- Live Activity banner ----
+  if (state.phase === "idle") {
+    card.innerHTML = headerHTML(progress, true) + `
+      <div class="la-divider"></div>
+      <div class="idle-wrap">
+        <div class="idle-title">Ready when you are</div>
+        <div class="idle-sub">Press “Start workout” below to begin</div>
+      </div>`;
+  } else if (state.phase === "complete") {
+    card.innerHTML = headerHTML(`${total} / ${total}`, false) + `
+      <div class="la-divider"></div>
+      <div class="complete-wrap">
+        <div class="complete-check">${ICON.check}</div>
+        <div class="complete-title">Workout complete</div>
+        <div class="complete-sub">Nice work — ${total} exercises done</div>
+      </div>`;
+  } else if (state.phase === "rest") {
+    card.innerHTML = headerHTML(progress, false) + `
+      <div class="la-divider"></div>
+      <div class="rest-row">
+        <div>
+          <span class="badge rest">REST</span>
+          <div class="rest-timer-big" id="restTimer">${fmt(remainingMs())}</div>
+        </div>
+        <div class="rest-upnext">
+          <div class="lbl">UP NEXT</div>
+          <div class="val">${(nx || ex).name}</div>
+        </div>
+      </div>
+      <div class="la-divider"></div>
+      <div class="la-actions">
+        <div class="la-btn" style="flex:none;width:100%" id="btnSkipRest">${ICON.skip} Skip rest</div>
+      </div>`;
+    $("btnSkipRest").onclick = skipRest;
+  } else { // active or paused
+    const paused = state.phase === "paused";
+    const repBased = !isTimed(ex);
+    const nextRow = nx
+      ? `<div class="la-exercise-row">
+           <span class="la-label next">NEXT</span>
+           <span class="la-exercise-name next-name">${nx.name}</span>
+         </div>`
+      : "";
+    const valueCell = paused
+      ? `<span class="badge paused">PAUSED</span>`
+      : repBased
+        ? `<span class="la-reps" id="laReps">${ex.reps}</span>`
+        : `<span class="la-timer" id="laTimer">${fmt(remainingMs())}</span>`;
+    const actions = repBased
+      ? `<div class="la-btn" id="btnDone">${ICON.check} Done</div>
+         <div class="la-btn" id="btnSkip">${ICON.skip} Skip</div>`
+      : `<div class="la-btn" id="btnPause">${paused ? ICON.play : ICON.pause} ${paused ? "Resume" : "Pause"}</div>
+         <div class="la-btn" id="btnSkip">${ICON.skip} Skip</div>`;
+    card.innerHTML = headerHTML(progress, false) + `
+      <div class="la-divider"></div>
+      <div class="la-exercise-row">
+        <span class="la-label now">NOW</span>
+        <span class="la-exercise-name">${ex.name}</span>
+        ${valueCell}
+      </div>
+      ${nextRow}
+      <div class="la-divider"></div>
+      <div class="la-actions">${actions}</div>`;
+    if (repBased) $("btnDone").onclick = enterRest;   // mark set complete -> rest -> next
+    else $("btnPause").onclick = togglePause;
+    $("btnSkip").onclick = skip;
+  }
+
+  renderIsland(ex, nx);
+  renderExpanded(ex, nx, progress);
+  renderStartBtn();
+}
+
+function headerHTML(progress, isIdle) {
+  return `
+    <div class="la-header">
+      <div class="la-logo-row">
+        <div class="la-logo"><img src="mwu-logo.png" alt="MWU"></div>
+        <span class="la-app-name">Move With Us</span>
+      </div>
+      <span class="la-progress">${progress}</span>
+    </div>
+    <div class="la-workout-row">
+      <span class="la-workout-name">${WORKOUT.name}</span>
+      ${rounds > 1 ? `<span class="round-pill">Round ${state.round} / ${rounds}</span>` : ""}
+    </div>`;
+}
+
+function renderIsland(ex, nx) {
+  const dot = $("diDot"), txt = $("diText"), tmr = $("diTimerCompact");
+  dot.className = "di-dot";
+  txt.className = "di-text";
+  if (state.phase === "rest") {
+    dot.classList.add("resting"); txt.classList.add("muted");
+    txt.textContent = "REST"; tmr.textContent = fmt(remainingMs());
+  } else if (state.phase === "paused") {
+    dot.classList.add("paused"); txt.classList.add("muted");
+    txt.textContent = "MWU"; tmr.textContent = "Paused";
+  } else if (state.phase === "active") {
+    txt.textContent = "MWU";
+    tmr.textContent = isTimed(cur()) ? fmt(remainingMs()) : cur().reps;
+  } else if (state.phase === "complete") {
+    dot.classList.add("resting"); txt.textContent = "MWU"; tmr.textContent = "Done";
+  } else {
+    txt.textContent = "MWU"; tmr.textContent = "—";
+  }
+}
+
+function renderExpanded(ex, nx, progress) {
+  const running = state.phase === "active" || state.phase === "rest" || state.phase === "paused";
+  $("expMetaMain").textContent = `Move With Us · ${WORKOUT.name}`;
+  $("expMetaSub").textContent =
+    `${rounds > 1 ? `Round ${state.round}/${rounds} · ` : ""}${Math.min(state.index + 1, total)} of ${total} exercises`;
+  $("expTimer").style.fontSize = "";        // reset; the active branch re-applies for rep text
+  $("expTimer").style.letterSpacing = "";
+
+  if (state.phase === "rest") {
+    $("expExercise").innerHTML = `<span class="badge rest">REST</span>`;
+    $("expTimer").textContent = fmt(remainingMs());
+    $("expNext").innerHTML = `Up next: <span>${(nx || ex).name}</span>`;
+  } else if (state.phase === "complete") {
+    $("expExercise").textContent = "Complete";
+    $("expTimer").textContent = "✓";
+    $("expNext").innerHTML = `${total} exercises done`;
+  } else {
+    const repBased = !isTimed(ex);
+    $("expExercise").textContent = ex.name;
+    $("expTimer").textContent = state.phase === "paused"
+      ? "Paused"
+      : repBased ? ex.reps : fmt(remainingMs());
+    $("expTimer").style.fontSize = repBased ? "18px" : "";   // rep text reads smaller than a clock
+    $("expTimer").style.letterSpacing = repBased ? "0" : "";
+    $("expNext").innerHTML = nx ? `Next up: <span>${nx.name}</span>` : `Final exercise`;
+  }
+
+  const doneCount = (state.round - 1) * total + state.index;   // exercises completed across all rounds
+  const pct = state.phase === "complete"
+    ? 100
+    : Math.round((doneCount / (rounds * total)) * 100);
+  $("expProgress").style.width = pct + "%";
+
+  // expanded actions
+  const acts = $("expActions");
+  if (state.phase === "rest") {
+    acts.innerHTML = `<div class="di-exp-btn" id="expSkipRest" style="flex:1">${ICON.skip} Skip rest</div>`;
+    $("expSkipRest").onclick = skipRest;
+  } else if (state.phase === "active" || state.phase === "paused") {
+    if (!isTimed(ex)) {
+      acts.innerHTML = `
+        <div class="di-exp-btn" id="expDone">${ICON.check} Done</div>
+        <div class="di-exp-btn" id="expSkip">${ICON.skip} Skip</div>`;
+      $("expDone").onclick = enterRest;
+      $("expSkip").onclick = skip;
+    } else {
+      const paused = state.phase === "paused";
+      acts.innerHTML = `
+        <div class="di-exp-btn" id="expPause">${paused ? ICON.play : ICON.pause} ${paused ? "Resume" : "Pause"}</div>
+        <div class="di-exp-btn" id="expSkip">${ICON.skip} Skip</div>`;
+      $("expPause").onclick = togglePause;
+      $("expSkip").onclick = skip;
+    }
+  } else {
+    acts.innerHTML = `<div class="di-exp-btn" style="flex:1;opacity:.5">No active workout</div>`;
+  }
+}
+
+function renderStartBtn() {
+  const b = $("btnStart");
+  const running = state.phase !== "idle" && state.phase !== "complete";
+  b.innerHTML = `${running ? ICON.skip : ICON.play} ${running ? "Restart workout" : "Start workout"}`;
+}
+
+// ---------- Controls wiring ----------
+$("btnStart").onclick = startWorkout;
+
+$("btnSpeed").onclick = () => {
+  const order = [1, 2, 4];
+  const i = (order.indexOf(state.speed) + 1) % order.length;
+  // preserve remaining time proportionally when changing speed mid-countdown
+  const rem = remainingMs();
+  state.speed = order[i];
+  if (state.phase === "active" || state.phase === "rest") state.endAt = Date.now() + rem * (1); // rem already real ms
+  $("btnSpeed").textContent = "Speed: " + state.speed + "×";
+};
+
+let diMode = true; // true = has Dynamic Island
+$("btnDevice").onclick = () => {
+  diMode = !diMode;
+  const btn = $("btnDevice");
+  btn.textContent = diMode ? "iPhone 15 Pro (Dynamic Island)" : "iPhone SE (no Dynamic Island)";
+  btn.classList.toggle("active", diMode);
+  $("diCompact").style.display = diMode ? "" : "none";
+  $("longpressHint").style.display = diMode ? "" : "none";
+  $("notch").style.display = diMode ? "none" : "block";
+  if (!diMode) closeExpanded();
+};
+
+// Card treatment: fixed dark surface vs. Apple's adaptive glass material
+let cardStyle = "solid";
+$("btnCard").onclick = () => {
+  cardStyle = cardStyle === "glass" ? "solid" : "glass";
+  $("laCard").classList.toggle("glass", cardStyle === "glass");
+  $("btnCard").textContent = "Card: " + (cardStyle === "glass" ? "Glass" : "Fixed");
+  $("btnCard").classList.toggle("active", cardStyle === "glass");
+};
+
+// Wallpaper cycler — glass only makes sense against a real photo
+const WALLPAPERS = [["wp-field", "Field"], ["wp-sunset", "Sunset"], ["wp-night", "Night"], ["wp-bright", "Bright"]];
+let wallpaperIdx = 0;
+$("btnWallpaper").onclick = () => {
+  const screen = document.querySelector(".screen");
+  WALLPAPERS.forEach(([cls]) => screen.classList.remove(cls));
+  wallpaperIdx = (wallpaperIdx + 1) % WALLPAPERS.length;
+  screen.classList.add(WALLPAPERS[wallpaperIdx][0]);
+  $("btnWallpaper").textContent = "Wallpaper: " + WALLPAPERS[wallpaperIdx][1];
+};
+
+// Long-press to expand the island
+const diCompact = $("diCompact");
+let pressTimer = null;
+function openExpanded() { $("diExpanded").classList.add("open"); diCompact.classList.add("pulse"); }
+function closeExpanded() { $("diExpanded").classList.remove("open"); diCompact.classList.remove("pulse"); }
+$("btnExpand").onclick = () =>
+  $("diExpanded").classList.contains("open") ? closeExpanded() : openExpanded();
+diCompact.addEventListener("mousedown", () => { pressTimer = setTimeout(openExpanded, 350); });
+diCompact.addEventListener("mouseup", () => clearTimeout(pressTimer));
+diCompact.addEventListener("mouseleave", () => clearTimeout(pressTimer));
+diCompact.addEventListener("click", () => {
+  // quick tap toggles too, for convenience in the prototype
+  if (!$("diExpanded").classList.contains("open")) openExpanded(); else closeExpanded();
+});
+
+// ---------- Boot ----------
+state.index = SEED_INDEX;   // open on Sumo Squat (5/12), mirroring the mockup's initial state
+enterActive();
+openExpanded();             // show the expanded surface by default so all three states are visible at once
+</script>
+</body>
+</html>
